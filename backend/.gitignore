@@ -1,0 +1,51 @@
+# Node
+node_modules/
+node_modules
+**/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+**/.env
+
+# Prisma generated client
+/generated/prisma
+**/generated/prisma/
+
+# Uploads (user-generated content, should not be in git)
+uploads/
+backend/uploads/
+backend/uploads/covers/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+
+# Temporary files
+*.tmp
+*.bak
+.cache/

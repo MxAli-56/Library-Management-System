@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model user {
+  user_id            Int              @id @default(autoincrement())
+  name               String
+  email              String           @unique
+  password           String
+  created_at         DateTime         @default(now())
+  updated_at         DateTime?        @updatedAt
+  deleted_at         DateTime?
+  reset_token        String?
+  reset_token_expiry DateTime?
+  userbookborrow     book_borrow[]
+  userbookrequest    book_request[]
+  userbranch         user_branch[]
+  userlate           user_late[]
+  usermembership     user_membership?
+  userrole           user_role[]
+}
+
+model role {
+  role_id    Int           @id @default(autoincrement())
+  name       String        @unique
+  created_at DateTime      @default(now())
+  updated_at DateTime?     @updatedAt
+  deleted_at DateTime?
+  roleaccess role_access[]
+  roleuser   user_role[]
+}
+
+model access {
+  access_id  Int           @id @default(autoincrement())
+  name       String        @unique
+  description String?       @db.VarChar(200)
+  unlock_roles Json?
+  created_at DateTime      @default(now())
+  updated_at DateTime?     @updatedAt
+  deleted_at DateTime?
+  accessrole role_access[]
+}
+
+model membership {
+  membership_id    Int               @id @default(autoincrement())
+  name             String            @unique
+  fee              Decimal           @db.Decimal(10, 2)
+  duration         Int
+  discount         Decimal           @db.Decimal(5, 2)
+  status_id        Int
+  created_at       DateTime          @default(now())
+  updated_at       DateTime?         @updatedAt
+  deleted_at       DateTime?
+  membershipstatus status            @relation(fields: [status_id], references: [status_id])
+  membershipuser   user_membership[]
+
+  @@index([status_id], map: "membership_status_id_fkey")
+}
+
+model category {
+  category_id Int     @id @default(autoincrement())
+  name        String  @unique
+  created_at  DateTime @default(now())
+  updated_at  DateTime? @updatedAt
+  deleted_at  DateTime?
+  book        book[]
+}
+
+model book {
+  book_id      Int             @id @default(autoincrement())
+  name         String
+  total_price  Decimal         @db.Decimal(10, 2)
+  borrow_price Decimal         @db.Decimal(10, 2) @default(0)
+  author       String
+  isbn         String
+  cover_image  String?
+  fine_per_day Decimal         @db.Decimal(10,2) @default(100)
+  category_id  Int
+  created_at   DateTime        @default(now())
+  updated_at   DateTime?       @updatedAt
+  deleted_at   DateTime?
+  bookborrow   book_borrow[]
+  category     category        @relation(fields: [category_id], references: [category_id])
+  branchstock  branch_stock[]
+
+  @@index([isbn])
+}
+
+model late_return {
+  late_return_id Int         @id @default(autoincrement())
+  book_borrow_id Int         @unique
+  fine           Decimal     @db.Decimal(10, 2)
+  days_late      Int
+  status_id      Int
+  created_at     DateTime    @default(now())
+  updated_at     DateTime?   @updatedAt
+  deleted_at     DateTime?
+  latestatus     status      @relation(fields: [status_id], references: [status_id])
+  latereturnuser user_late[]
+
+  @@index([status_id], map: "late_return_status_id_fkey")
+}
+
+model branch {
+  branch_id        Int               @id @default(autoincrement())
+  name             String
+  location         String
+  created_at       DateTime          @default(now())
+  updated_at       DateTime?         @updatedAt
+  deleted_at       DateTime?
+  branchuser       user_branch[]
+  branchmembership user_membership[]
+  branchstock      branch_stock[]
+  branchborrow     book_borrow[]
+  branchrequest    book_request[]
+}
+
+model status {
+  status_id        Int            @id @default(autoincrement())
+  name             String
+  type             String
+  created_at       DateTime       @default(now())
+  updated_at       DateTime?      @updatedAt
+  deleted_at       DateTime?
+  borrowstatus     book_borrow[]
+  requeststatus    book_request[]
+  latestatus       late_return[]
+  membershipstatus membership[]
+}
+
+model user_branch {
+  user_branch_id Int       @id @default(autoincrement())
+  user_id        Int
+  branch_id      Int
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
+  deleted_at     DateTime?
+  branchuser     branch    @relation(fields: [branch_id], references: [branch_id])
+  userbranch     user      @relation(fields: [user_id], references: [user_id])
+
+  @@unique([user_id, branch_id])
+  @@index([branch_id], map: "user_branch_branch_id_fkey")
+}
+
+model user_role {
+  user_role_id Int       @id @default(autoincrement())
+  user_id      Int
+  role_id      Int
+  created_at   DateTime  @default(now())
+  updated_at   DateTime? @updatedAt
+  deleted_at   DateTime?
+  roleuser     role      @relation(fields: [role_id], references: [role_id])
+  userrole     user      @relation(fields: [user_id], references: [user_id])
+
+  @@unique([user_id, role_id])
+  @@index([role_id], map: "user_role_role_id_fkey")
+}
+
+model role_access {
+  id         Int       @id @default(autoincrement())
+  role_id    Int
+  access_id  Int
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  deleted_at DateTime?
+  accessrole access    @relation(fields: [access_id], references: [access_id])
+  roleaccess role      @relation(fields: [role_id], references: [role_id])
+
+  @@unique([role_id, access_id])
+  @@index([access_id], map: "role_access_access_id_fkey")
+}
+
+model user_membership {
+  user_membership_id Int        @id @default(autoincrement())
+  user_id            Int        @unique
+  membership_id      Int
+  branch_id          Int?
+  start_date         DateTime   @default(now())
+  end_date           DateTime
+  created_at         DateTime   @default(now())
+  updated_at         DateTime?  @updatedAt
+  deleted_at         DateTime?
+  membershipuser     membership @relation(fields: [membership_id], references: [membership_id])
+  usermembership     user       @relation(fields: [user_id], references: [user_id])
+  branchuser         branch?    @relation(fields: [branch_id], references: [branch_id])
+
+  @@index([membership_id], map: "user_membership_membership_id_fkey")
+  @@index([branch_id], map: "user_membership_branch_id_fkey")
+}
+
+model book_request {
+  book_request_id Int       @id @default(autoincrement())
+  name            String
+  author          String
+  isbn            String
+  cover_image     String?
+  user_id         Int
+  branch_id       Int?
+  request_date    DateTime  @default(now())
+  status_id       Int
+  rejection_reason String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime? @updatedAt
+  deleted_at      DateTime?
+  requeststatus   status    @relation(fields: [status_id], references: [status_id])
+  userbookrequest user      @relation(fields: [user_id], references: [user_id])
+  branchrequest   branch?   @relation(fields: [branch_id], references: [branch_id])
+
+  @@unique([user_id, isbn])
+  @@index([status_id], map: "book_request_status_id_fkey")
+  @@index([branch_id], map: "book_request_branch_id_fkey")
+}
+
+model book_borrow {
+  book_borrow_id       Int       @id @default(autoincrement())
+  user_id              Int
+  book_id              Int
+  branch_id            Int?
+  borrow_date          DateTime  @default(now())
+  due_date             DateTime
+  return_date          DateTime?
+  amount_paid          Decimal?  @db.Decimal(10,2)
+  amount_paid_allocate Decimal   @default(0) @db.Decimal(10, 2)
+  amount_paid_return   Decimal   @default(0) @db.Decimal(10, 2)
+  status_id            Int
+  created_at           DateTime  @default(now())
+  updated_at           DateTime? @updatedAt
+  deleted_at           DateTime?
+  bookborrow           book      @relation(fields: [book_id], references: [book_id])
+  borrowstatus         status    @relation(fields: [status_id], references: [status_id])
+  userbookborrow       user      @relation(fields: [user_id], references: [user_id])
+  branchborrow         branch?   @relation(fields: [branch_id], references: [branch_id])
+
+  @@index([book_id], map: "book_borrow_book_id_fkey")
+  @@index([status_id], map: "book_borrow_status_id_fkey")
+  @@index([user_id], map: "book_borrow_user_id_fkey")
+  @@index([branch_id], map: "book_borrow_branch_id_fkey")
+}
+
+model branch_stock {
+  branch_stock_id Int       @id @default(autoincrement())
+  branch_id       Int
+  book_id         Int
+  quantity        Int       @default(0)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime? @updatedAt
+  deleted_at      DateTime?
+  branchstock     branch    @relation(fields: [branch_id], references: [branch_id])
+  bookstock       book      @relation(fields: [book_id], references: [book_id])
+
+  @@unique([branch_id, book_id])
+  @@index([branch_id], map: "branch_stock_branch_id_fkey")
+  @@index([book_id], map: "branch_stock_book_id_fkey")
+}
+
+model user_late {
+  id             Int         @id @default(autoincrement())
+  user_id        Int
+  late_return_id Int
+  created_at     DateTime    @default(now())
+  updated_at     DateTime?   @updatedAt
+  deleted_at     DateTime?
+  latereturnuser late_return @relation(fields: [late_return_id], references: [late_return_id])
+  userlate       user        @relation(fields: [user_id], references: [user_id])
+
+  @@index([late_return_id], map: "user_late_late_return_id_fkey")
+  @@index([user_id], map: "user_late_user_id_fkey")
+}
